@@ -1,0 +1,52 @@
+#made by hanks (STEAM_0:0:174758246)
+#shared at https://github.com/hanks82/e2
+
+#my e2 and math sucks so if you find a place that can be optimized, please tell me
+#i tried to make it as realistic as possible, so its probably not very fun to fly
+
+#[
+setup:
+wire the input "E" to the base plate, make sure the base plates forward direction is facing the direction you want your plane to go
+wire the input "Seat" to the seat
+wire the input "CamAng" to camang of your cam controller, or the angle you want the plane to face at
+the output "THR" is the throttle, its not in percentage so if you want the percentage, multiply it by 100
+
+controls:
+w and s for throttle
+space for air break
+a and d for roll
+camang for pitch and yaw
+]#
+
+@name hanks' plane engine
+@inputs [E Seat]:entity CamAng:angle
+@outputs THR
+@persist Force_Mul
+runOnTick(1)
+if(duped()) {
+    reset()
+}
+if(first()) {
+    Force_Mul = 8 #force multiplier
+    E:propDrag(1)
+}
+Driver = Seat:driver()
+Vel = E:vel()
+TS = clamp(Vel:length() / 1800, 0, 1)
+Mass = E:mass()
+
+if(Driver:isValid()) {
+    W = Driver:keyForward()
+    S = Driver:keyBack()
+    THR = clamp(THR + 0.01 * (W - S), 0, 1)
+    if(Driver:keyJump()) {
+        L_Vel = E:velL()
+        E:applyForce(Mass / 600 * (E:toWorld(-L_Vel:setZ(0)) - E:boxCenterW()))
+    }
+    A = Driver:keyLeft()
+    D = Driver:keyRight()
+    Roll = (D - A) * 20
+    E:applyTorque((clamp(90 * E:toLocal(rotationVector(quat(CamAng:setRoll(E:angles():roll())) / quat(E:angles())) + E:pos())- 25 * E:angVelVector(), vec(-3, -60, -15) * TS, vec(3, 60, 15) * TS) + vec(Roll, 0, 0)) * E:inertia())
+}
+E:applyForce(Mass * (E:forward() * Force_Mul) * THR)
+E:applyForce(Mass * ((E:forward() * Vel:length() - Vel) * TS / 60 * (2 - E:forward():distance(Vel:normalized())) + E:up() * 9.01352 * TS))
