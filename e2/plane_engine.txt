@@ -37,7 +37,7 @@ if(Driver:isValid()) {
     S = Driver:keyBack()
     THR = clamp(THR + 0.01 * TickF * (W - S), 0, 1)
     if(Driver:keyJump()) {
-        E:applyForce(Mass / 1200 * (E:toWorld(-L_Vel:setZ(0)) - E:boxCenterW()) * Tick_Fix)
+        E:applyForce(Mass / 1200 * (E:toWorld(-L_Vel:setZ(0)) - E:boxCenterW()) * TickF)
     }
     PAD1 = owner():keyPressed("PAD_1")
     if(PAD1 && changed(PAD1)) {
@@ -49,7 +49,7 @@ if(Driver:isValid()) {
     Roll = vec((D - A) * 42, 0, 0)
     E:applyTorque((clamp(60 * E:toLocal(rotationVector(quat(CamAng:setRoll(E:angles():roll())) / quat(E:angles())) + E:pos()) - 25 * E:angVelVector(), vec(-30, -60, -6), vec(30, 60, 6)) + Roll) * E:inertia() * TS * TickF) 
 }
-Engine = (E:forward()* THR * 8.8
+Engine = E:forward()* THR * 8.8
 Wings = (E:forward() * Vel:length() - Vel) * TS / 90 * (2 - E:forward():distance(Vel:normalized())) + E:up() * (Flaps ? 12 : 9.01352) * clamp(L_Vel:x() / 1200, 0, 1) * (1200 - clamp(L_Vel:x() / 1200, 0, 1)) / 1500
 Drag = E:toWorld(-L_Vel * vec(0.001, 0.01, 0.042)) - E:boxCenterW()
 E:applyForce((Engine + Wings + Drag) * Mass * TickF)
