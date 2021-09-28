@@ -1,52 +1,56 @@
-#made by hanks (STEAM_0:0:174758246)
-#shared at https://github.com/hanks82/e2
-
-#my e2 and math sucks so if you find a place that can be optimized, please tell me
-#i tried to make it as realistic as possible, so its probably not very fun to fly
-
+@name plen
+@inputs [E Seat]:entity CamAng:angle
+@outputs THR Flaps
+@persist TickF
+#hanks (STEAM_0:0:174758246) https://github.com/hanks82/gmod/e2
+#my e2 and meth sucks so if you find a place that can be optimized, plz tell me
 #[
 setup:
-wire the input "E" to the base plate, make sure the base plates forward direction is facing the direction you want your plane to go
-wire the input "Seat" to the seat
-wire the input "CamAng" to camang of your cam controller, or the angle you want the plane to face at
-the output "THR" is the throttle, its not in percentage so if you want the percentage, multiply it by 100
+wire input "E" to the base plate, make sure the base plates forward direction is facing the direction you want your plane to go
+wire input "Seat" to the seat
+wire input "CamAng" to camang of your cam controller, or the angle you want the plane to face at
+output "THR" is throttle, its not in percentage so if you want the percentage, multiply it by 100
 
 controls:
 w and s for throttle
 space for air break
 a and d for roll
 camang for pitch and yaw
+numpad 1 for flaps
 ]#
-
-@name hanks' plane engine
-@inputs [E Seat]:entity CamAng:angle
-@outputs THR
-@persist Force_Mul
 runOnTick(1)
 if(duped()) {
     reset()
 }
 if(first()) {
-    Force_Mul = 8 #force multiplier
-    E:propDrag(1)
+    E:propDrag(0)
+    TickF = 66 / (1 / tickInterval())
 }
 Driver = Seat:driver()
 Vel = E:vel()
-TS = clamp(Vel:length() / 1800, 0, 1)
+TS = clamp(Vel:length() / 1200, 0, 1)
 Mass = E:mass()
-
+R = Driver:keyReload()
+L_Vel = E:velL()
 if(Driver:isValid()) {
     W = Driver:keyForward()
     S = Driver:keyBack()
-    THR = clamp(THR + 0.01 * (W - S), 0, 1)
+    THR = clamp(THR + 0.01 * TickF * (W - S), 0, 1)
     if(Driver:keyJump()) {
-        L_Vel = E:velL()
-        E:applyForce(Mass / 600 * (E:toWorld(-L_Vel:setZ(0)) - E:boxCenterW()))
+        E:applyForce(Mass / 1200 * (E:toWorld(-L_Vel:setZ(0)) - E:boxCenterW()) * Tick_Fix)
+    }
+    PAD1 = owner():keyPressed("PAD_1")
+    if(PAD1 && changed(PAD1)) {
+        Flaps = !Flaps
+        Seat:hintDriver(Flaps ? "Flaps Mode 2" : "Flaps Mode 1", 1)   
     }
     A = Driver:keyLeft()
     D = Driver:keyRight()
-    Roll = (D - A) * 20
-    E:applyTorque((clamp(90 * E:toLocal(rotationVector(quat(CamAng:setRoll(E:angles():roll())) / quat(E:angles())) + E:pos())- 25 * E:angVelVector(), vec(-3, -60, -15) * TS, vec(3, 60, 15) * TS) + vec(Roll, 0, 0)) * E:inertia())
+    Roll = vec((D - A) * 42, 0, 0)
+    E:applyTorque((clamp(60 * E:toLocal(rotationVector(quat(CamAng:setRoll(E:angles():roll())) / quat(E:angles())) + E:pos()) - 25 * E:angVelVector(), vec(-30, -60, -6), vec(30, 60, 6)) + Roll) * E:inertia() * TS * TickF) 
 }
-E:applyForce(Mass * (E:forward() * Force_Mul) * THR)
-E:applyForce(Mass * ((E:forward() * Vel:length() - Vel) * TS / 60 * (2 - E:forward():distance(Vel:normalized())) + E:up() * 9.01352 * TS))
+Engine = (E:forward()* THR * 8.8
+Wings = (E:forward() * Vel:length() - Vel) * TS / 90 * (2 - E:forward():distance(Vel:normalized())) + E:up() * (Flaps ? 12 : 9.01352) * clamp(L_Vel:x() / 1200, 0, 1) * (1200 - clamp(L_Vel:x() / 1200, 0, 1)) / 1500
+Drag = E:toWorld(-L_Vel * vec(0.001, 0.01, 0.042)) - E:boxCenterW()
+E:applyForce((Engine + Wings + Drag) * Mass * TickF)
+
