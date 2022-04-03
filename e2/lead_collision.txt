@@ -1,0 +1,78 @@
+#[
+made by hanks (STEAM_0:0:174758246), posted on https://github.com/hanks82/gmod/e2
+
+usage:
+
+use 
+#include "where you store this file"
+in the first() or dupefinished() event of your missile code, 
+(or you can just copy paste the following function to your code, does the same)
+
+then in your missiles tracking part, do lc(Missile, Target),
+this will return a direction vector where the missile should fly at to hit the target.
+if you also want the collision point, just call the variable "LC_Collide"
+]#
+
+function vector lc(Missile:entity, Target:entity) {
+
+    #line sphere intersection from https://www.codeproject.com/Articles/19799/Simple-Ray-Tracing-in-C-Part-II-Triangles-Intersec
+
+    local P0 = Missile:massCenter()
+    local P1 = Target:massCenter()
+    local Center = P1 + Target:vel()
+    local Radius = Missile:vel():length()
+    local CX = Center:x()
+    local CY = Center:y()
+    local CZ = Center:z()
+
+    local PX = P0:x()
+    local PY = P0:y()
+    local PZ = P0:z()
+
+    local VX = P1:x() - PX
+    local VY = P1:y() - PY
+    local VZ = P1:z() - PZ
+
+    local A = VX * VX + VY * VY + VZ * VZ
+    local B = 2 * (PX * VX + PY * VY + PZ * VZ - VX * CX - VY * CY - VZ * CZ)
+    local C = PX * PX - 2 * PX * CX + CX * CX + PY * PY - 2 * PY * CY + CY * CY + PZ * PZ - 2 * PZ * CZ + CZ * CZ - Radius * Radius
+
+    local D = B * B - 4 * A * C
+
+    if ( D < 0 ) {
+        Solutions = array()
+        LC_Collide = P1
+        return P1
+    }
+
+    local T1 = (-B - sqrt(D)) / (2 * A)
+    local Solution1 = vec(P0:x() * ( 1 - T1) + T1 * P1:x(), P0:y() * ( 1 - T1 ) + T1 * P1:y(), P0:z() * ( 1 - T1 ) + T1 * P1:z())
+    if(D == 0) {
+        Solutions = array(Solution1)
+    } else {
+        T2 = ( -B + sqrt(D)) / (2 * A)
+        local Solution2 = vec(P0:x() * (1 - T2) + T2 * P1:x(), P0:y() * ( 1 - T2 ) + T2 * P1:y(), P0:z() * (1 - T2) + T2 * P1:z())
+    
+        Solutions = array(Solution1, Solution2)
+    }
+        
+    if(Solutions:count() == 1) {
+        Sol = Solutions[1, vector]
+    } else {
+        local Sol1 = Solutions[1, vector]
+        local Sol2 = Solutions[2, vector]
+        local Local_LOS1 = toLocalAng(vec(), (P1 - P0):toAngle(), vec(), (Center - Sol1):toAngle()):forward()
+        local YZ1 = vec2(Local_LOS1:y(), Local_LOS1:z())
+        local Rot1 = vec2(abs(Local_LOS1:x()), YZ1:length()):toAngle()
+        local Local_LOS2 = toLocalAng(vec(), (P1 - P0):toAngle(), vec(), (Center - Sol1):toAngle()):forward()
+        local YZ2 = vec2(Local_LOS2:y(), Local_LOS2:z())
+        local Rot2 = vec2(abs(Local_LOS2:x()), YZ2:length()):toAngle()
+        if(Rot1 <= Rot2) {
+            Sol = Solutions[1, vector]
+        } else {
+            Sol = Solutions[2, vector]
+        }
+    }
+    LC_Collide = P1 + (P1 - P0):length() / (P1 - Sol):length() * Target:vel()
+    return Center - Sol
+}
