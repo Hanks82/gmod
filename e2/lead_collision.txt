@@ -6,7 +6,7 @@ usage:
 use 
 #include "where you store this file"
 in the first() or dupefinished() event of your missile code, 
-(or you can just copy paste the following function to your code, does the same)
+(or you can just copy paste the function there, does the same)
 
 then in your missiles tracking part, do lc(Missile, Target),
 this will return a direction vector where the missile should fly at to hit the target.
